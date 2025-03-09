@@ -6,3 +6,4 @@ docling
 lancedb
 streamlit
 tiktoken
+plotly
