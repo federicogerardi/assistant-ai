@@ -151,31 +151,7 @@ class DocumentService:
 
     def get_chat_response(self, messages: List[Dict[str, str]], context: str) -> str:
         """Get chat response from OpenAI."""
-        try:
-            logger.info("Generating chat response...")
-            start_time = time.time()
-            
-            system_prompt = f"""You are a helpful assistant that answers questions based on the provided context.
-            Use only the information from the context to answer questions. If you're unsure or the context
-            doesn't contain the relevant information, say so.
-            
-            Context:
-            {context}
-            """
-            
-            messages_with_context = [{"role": "system", "content": system_prompt}, *messages]
-            
-            response = self.client.chat.completions.create(
-                model="gpt-4",
-                messages=messages_with_context,
-                temperature=0.7
-            )
-            
-            response_time = time.time() - start_time
-            logger.info(f"Generated response in {response_time:.2f} seconds")
-            
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            logger.error(f"Error getting chat response: {str(e)}", exc_info=True)
-            return "Mi dispiace, si è verificato un errore nel generare la risposta." 
+        from src.assistant_service import AssistantService  # Import locale per evitare cicli
+        
+        assistant = AssistantService(self)  # Passiamo l'istanza di DocumentService
+        return assistant.get_assistant_response(messages, context) 
