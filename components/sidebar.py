@@ -1,5 +1,6 @@
 import streamlit as st
 from config.agents import AGENTS_CONFIG
+from services.document_service import DocumentService
 
 def render_sidebar():
     """Render the sidebar and return the selected agent ID."""
@@ -43,15 +44,28 @@ def render_admin_actions():
 def handle_refresh_button():
     """Handle the refresh button logic."""
     if st.session_state.show_toast:
-        st.toast("✅ Database ricaricato con successo!", icon="✅")
+        st.toast("Database ricaricato con successo!", icon="✅")
         st.session_state.show_toast = False
     
     if st.session_state.refresh_state == 'refreshing':
-        st.toast("🔄 Ricaricamento in corso...", icon="🔄")
-        st.session_state.refresh_state = 'ready'
-        st.session_state.show_toast = True
-        st.cache_resource.clear()
-        st.rerun()
+        st.toast("Ricaricamento in corso...", icon="🔄")
+        try:
+            # Reinizializza i servizi in modalità non read-only per il refresh
+            for agent_id, config in AGENTS_CONFIG.items():
+                doc_service = DocumentService(
+                    data_paths=config['data_paths'],
+                    config=config,
+                    read_only=False
+                )
+                doc_service.process_documents()
+            
+            st.session_state.refresh_state = 'ready'
+            st.session_state.show_toast = True
+            st.cache_resource.clear()
+            st.rerun()
+        except Exception as e:
+            st.error(f"Errore durante il refresh: {str(e)}")
+            st.session_state.refresh_state = 'ready'
     
     if st.button("🔄 Ricarica Documenti"):
         st.session_state.refresh_state = 'refreshing'
