@@ -1,0 +1,14 @@
+# Environment
+.env
+venv/
+__pycache__/
+
+# Database e file vettoriali
+data/processed/*
+data/vector_db/*
+!data/processed/.gitkeep
+!data/vector_db/.gitkeep
+
+# Altri file di sistema
+.DS_Store
+*.pyc
