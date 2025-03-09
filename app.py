@@ -1,82 +1,79 @@
 import streamlit as st
-from openai import OpenAI
-from dotenv import load_dotenv
-import os
-from src.vector_store import VectorStore
+from src.document_service import DocumentService
+import logging
+from pathlib import Path
 
-# Carica le variabili d'ambiente
-load_dotenv()
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Inizializza il client OpenAI
-client = OpenAI()
+# Initialize document service
+@st.cache_resource
+def init_service():
+    return DocumentService()
 
-# Configurazione della pagina Streamlit
+# Configurazione della pagina
 st.set_page_config(
-    page_title="AI Assistant Chat",
-    page_icon="🤖",
+    page_title="Document Q&A",
+    page_icon="📚",
     layout="wide"
 )
 
-# Titolo dell'applicazione
-st.title("💬 AI Assistant Chat")
+# Initialize Streamlit app
+st.title("📚 Document Q&A")
 
-# Inizializza lo stato della sessione per la cronologia delle chat
+# Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Inizializzazione del VectorStore
-vector_store = VectorStore()
+# Initialize service and process documents at startup
+service = init_service()
+service.process_documents()
 
-# Controllo dei file modificati all'avvio
-changed_files = vector_store.check_files_changed()
-if changed_files:
-    st.sidebar.warning(f"Trovati {len(changed_files)} file modificati:")
-    for file in changed_files:
-        st.sidebar.text(f"- {file.name}")
+# Debug settings in sidebar
+with st.sidebar:
+    st.subheader("🛠️ Debug Settings")
+    show_debug = st.checkbox("Mostra informazioni di debug", False)
     
-    if st.sidebar.button("Elabora file modificati"):
-        # Qui implementeremo l'elaborazione dei file
-        pass
+    if show_debug:
+        st.write("Session State:")
+        st.json(dict(st.session_state))
+        st.write("Messaggi nella conversazione:")
+        st.write(f"Numero messaggi: {len(st.session_state.messages)}")
 
-# Funzione per ottenere la risposta dall'assistente
-def get_assistant_response(messages):
-    """Ottiene la risposta dall'assistente OpenAI.
-
-    Args:
-        messages: Cronologia dei messaggi
-
-    Returns:
-        str: Risposta dell'assistente
-    """
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "Sei un assistente AI utile e amichevole."},
-            *messages
-        ],
-        temperature=0.7,
-    )
-    return response.choices[0].message.content
-
-# Visualizza la cronologia dei messaggi
+# Chat interface
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Input dell'utente
-if prompt := st.chat_input("Scrivi il tuo messaggio qui..."):
-    # Mostra il messaggio dell'utente
+if prompt := st.chat_input("Fai una domanda sui documenti..."):
+    # Display user message
     with st.chat_message("user"):
         st.markdown(prompt)
     
-    # Aggiungi il messaggio dell'utente alla cronologia
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # Ottieni e mostra la risposta dell'assistente
-    with st.chat_message("assistant"):
-        with st.spinner("Pensando..."):
-            response = get_assistant_response(st.session_state.messages)
-            st.markdown(response)
+    # Search documents
+    results = service.search_documents(prompt)
     
-    # Aggiungi la risposta dell'assistente alla cronologia
-    st.session_state.messages.append({"role": "assistant", "content": response}) 
+    # Display debug information if enabled
+    if show_debug and results:
+        with st.expander("🔍 Debug: Sezioni rilevanti trovate"):
+            for result in results:
+                st.write("---")
+                st.write(f"📄 {Path(result['metadata']['source']).name}")
+                st.caption(f"Score: {result['score']:.4f}")
+                st.write(result['text'])
+    
+    # Get context from results
+    context = "\n\n".join([r['text'] for r in results])
+
+    # Get and display assistant response
+    with st.chat_message("assistant"):
+        with st.spinner("Elaborazione risposta..."):
+            response = service.get_chat_response(st.session_state.messages, context)
+            st.markdown(response)
+
+    st.session_state.messages.append({"role": "assistant", "content": response})
+
+st.caption("Powered by OpenAI GPT-4 & LanceDB") 
