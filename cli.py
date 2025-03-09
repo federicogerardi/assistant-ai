@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 import hashlib
 from datetime import datetime
-from src.document_service import DocumentService
+from services.document_service import DocumentService
 from config.agents import AGENTS_CONFIG
 
 # Setup logging

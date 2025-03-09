@@ -5,7 +5,7 @@ import lancedb
 from openai import OpenAI
 from docling.document_converter import DocumentConverter
 from docling.chunking import HybridChunker
-from utils.tokenizer import OpenAITokenizerWrapper
+from services.tokenizer import OpenAITokenizerWrapper
 import time
 from datetime import datetime
 import hashlib
