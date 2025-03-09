@@ -2,6 +2,7 @@ import streamlit as st
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+from src.vector_store import VectorStore
 
 # Carica le variabili d'ambiente
 load_dotenv()
@@ -22,6 +23,20 @@ st.title("💬 AI Assistant Chat")
 # Inizializza lo stato della sessione per la cronologia delle chat
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+# Inizializzazione del VectorStore
+vector_store = VectorStore()
+
+# Controllo dei file modificati all'avvio
+changed_files = vector_store.check_files_changed()
+if changed_files:
+    st.sidebar.warning(f"Trovati {len(changed_files)} file modificati:")
+    for file in changed_files:
+        st.sidebar.text(f"- {file.name}")
+    
+    if st.sidebar.button("Elabora file modificati"):
+        # Qui implementeremo l'elaborazione dei file
+        pass
 
 # Funzione per ottenere la risposta dall'assistente
 def get_assistant_response(messages):
