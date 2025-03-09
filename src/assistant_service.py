@@ -8,13 +8,14 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 class AssistantService:
-    def __init__(self, document_service):
-        """Initialize assistant service with tools and OpenAI client."""
+    def __init__(self, document_service, agent_config: Dict[str, Any]):
+        """Initialize assistant service with specific agent configuration."""
         self.client = OpenAI()
         self.document_service = document_service
+        self.agent_config = agent_config
         self.tools = self._register_tools()
         
-        logger.info("AssistantService initialized with %d tools", len(self.tools))
+        logger.info(f"AssistantService initialized for {agent_config['name']} with {len(self.tools)} tools")
 
     def _register_tools(self) -> List[Dict[str, Any]]:
         """Register all available tools for the assistant."""
@@ -111,7 +112,8 @@ class AssistantService:
     def get_assistant_response(self, messages: List[Dict[str, str]], context: str = "") -> str:
         """Get response from assistant with function calling capabilities."""
         try:
-            system_prompt = f"""You are a helpful assistant that answers questions based on the provided context.
+            system_prompt = f"""{self.agent_config['system_prompt']}
+            
             Use the available tools to search for information when needed.
             If you're unsure or can't find relevant information, say so.
             
