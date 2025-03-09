@@ -16,13 +16,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Aggiungiamo cache per i servizi
 @st.cache_resource
 def init_agent_services():
-    """Initialize services for all agents."""
+    """Initialize services for all agents in read-only mode."""
     services = {}
     for agent_id, config in AGENTS_CONFIG.items():
-        doc_service = DocumentService(config['data_paths'], config)
+        # Inizializza i servizi in modalità "read-only"
+        doc_service = DocumentService(
+            data_paths=config['data_paths'], 
+            config=config,
+            read_only=True
+        )
         assistant_service = AssistantService(doc_service, config)
         services[agent_id] = {
             'doc_service': doc_service,
@@ -41,17 +45,29 @@ st.set_page_config(
 # Inizializzazione dello state
 init_session_state()
 
-# Inizializzazione dei servizi
-services = init_agent_services()
+try:
+    # Inizializzazione dei servizi in modalità read-only
+    services = init_agent_services()
+except Exception as e:
+    error_msg = str(e)
+    if "Database non inizializzato" in error_msg:
+        st.error("Il database non è stato inizializzato. Esegui 'python cli.py refresh' per inizializzare il database.")
+    elif "Tabella" in error_msg and "non trovata" in error_msg:
+        command = error_msg.split("Esegui '")[1].split("'")[0]
+        st.error(f"Tabella non trovata. Esegui questo comando nel terminale:\n\n```bash\n{command}\n```")
+    else:
+        st.error(f"Errore nell'inizializzazione dei servizi: {error_msg}")
+    st.stop()
 
-# Rendering della sidebar
-selected_agent_id = render_sidebar()
+# Rendering della sidebar con il footer
+with st.sidebar:
+    selected_agent_id = render_sidebar()
+    # Aggiungi uno spazio vuoto per spingere il footer in basso
+    st.markdown("<br>" * 5, unsafe_allow_html=True)
+    st.caption("Powered by OpenAI GPT-4 & LanceDB")
 
 # Rendering del contenuto principale
 if st.session_state.current_page == "Chat":
     render_chat(selected_agent_id, services)
 else:
-    render_dashboard(services)
-
-# Footer
-st.caption("Powered by OpenAI GPT-4 & LanceDB") 
+    render_dashboard(services) 

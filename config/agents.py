@@ -3,6 +3,7 @@ from pathlib import Path
 
 AGENTS_CONFIG = {
     "procedure": {
+        "id": "procedure",
         "name": "Esperto Procedure",
         "icon": "📋",
         "description": "Esperto in procedure aziendali e documentazione tecnica",
@@ -16,6 +17,7 @@ AGENTS_CONFIG = {
         Rispondi in modo preciso e formale, citando sempre le fonti."""
     },
     "marketing": {
+        "id": "marketing",
         "name": "Esperto Marketing",
         "icon": "📢",
         "description": "Specialista in marketing e comunicazione",
@@ -29,6 +31,7 @@ AGENTS_CONFIG = {
         Usa un tono professionale ma coinvolgente."""
     },
     "hr": {
+        "id": "hr",
         "name": "Esperto Risorse Umane",
         "icon": "👥",
         "description": "Specialista in gestione del personale",

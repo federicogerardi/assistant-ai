@@ -112,9 +112,14 @@ class AssistantService:
     def get_assistant_response(self, messages: List[Dict[str, str]], context: str = "") -> str:
         """Get response from assistant with function calling capabilities."""
         try:
+            # Verifica se ci sono documenti
+            table = self.document_service.db.open_table(self.document_service.table_name)
+            df = table.to_pandas()
+            has_documents = not df.empty
+            
             system_prompt = f"""{self.agent_config['system_prompt']}
             
-            Use the available tools to search for information when needed.
+            {'Use the available tools to search for information when needed.' if has_documents else 'No documents are currently available. Provide general guidance based on your knowledge.'}
             If you're unsure or can't find relevant information, say so.
             
             Context:

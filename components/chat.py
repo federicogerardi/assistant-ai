@@ -20,31 +20,35 @@ def render_chat(selected_agent_id, services):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Chat input and processing
+    # Chat input
     if prompt := st.chat_input(f"Chiedi all'esperto {AGENTS_CONFIG[selected_agent_id]['name']}..."):
+        # Display user message
         with st.chat_message("user"):
             st.markdown(prompt)
-        
-        st.session_state.agent_messages[selected_agent_id].append({"role": "user", "content": prompt})
 
+        # Add user message to history
+        st.session_state.agent_messages[selected_agent_id].append(
+            {"role": "user", "content": prompt}
+        )
+
+        # Get assistant response
         try:
-            with st.spinner("🔍 Ricerca nei documenti..."):
-                results = current_services['doc_service'].search_documents(prompt)
-            
+            results = current_services['doc_service'].search_documents(prompt)
             context = "\n\n".join([r['text'] for r in results])
-
+            
             with st.chat_message("assistant"):
-                with st.spinner("🤔 Elaborazione risposta..."):
-                    response = current_services['assistant_service'].get_assistant_response(
-                        st.session_state.agent_messages[selected_agent_id], 
-                        context
-                    )
-                    st.markdown(response)
+                response = current_services['assistant_service'].get_assistant_response(
+                    st.session_state.agent_messages[selected_agent_id], 
+                    context
+                )
+                st.markdown(response)
 
+            # Add assistant response to history
             st.session_state.agent_messages[selected_agent_id].append(
                 {"role": "assistant", "content": response}
             )
         
         except Exception as e:
             logger.error(f"Error processing query: {e}", exc_info=True)
-            st.error("Si è verificato un errore durante l'elaborazione della richiesta.") 
+            with st.chat_message("assistant"):
+                st.error("Mi dispiace, si è verificato un errore. Riprova tra poco.") 

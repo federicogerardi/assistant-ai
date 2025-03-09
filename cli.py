@@ -50,6 +50,8 @@ def refresh(agent, force):
             agents_to_refresh = AGENTS_CONFIG
             
         for agent_id, config in agents_to_refresh.items():
+            # Assicurati che l'id sia presente nella config
+            config['id'] = agent_id
             logger.info(f"Aggiornamento documenti per {config['name']}...")
             doc_service = DocumentService(config['data_paths'], config)
             
