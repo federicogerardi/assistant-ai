@@ -1,5 +1,6 @@
 import streamlit as st
 from src.document_service import DocumentService
+from src.assistant_service import AssistantService
 import logging
 from pathlib import Path
 
@@ -7,10 +8,12 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize document service
+# Initialize services
 @st.cache_resource
-def init_service():
-    return DocumentService()
+def init_services():
+    doc_service = DocumentService()
+    assistant_service = AssistantService(doc_service)
+    return doc_service, assistant_service
 
 # Configurazione della pagina
 st.set_page_config(
@@ -26,9 +29,9 @@ st.title("📚 Document Q&A")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Initialize service and process documents at startup
-service = init_service()
-service.process_documents()
+# Initialize services and process documents at startup
+doc_service, assistant_service = init_services()
+doc_service.process_documents()
 
 # Debug settings in sidebar
 with st.sidebar:
@@ -54,7 +57,7 @@ if prompt := st.chat_input("Fai una domanda sui documenti..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     # Search documents
-    results = service.search_documents(prompt)
+    results = doc_service.search_documents(prompt)
     
     # Display debug information if enabled
     if show_debug and results:
@@ -71,7 +74,10 @@ if prompt := st.chat_input("Fai una domanda sui documenti..."):
     # Get and display assistant response
     with st.chat_message("assistant"):
         with st.spinner("Elaborazione risposta..."):
-            response = service.get_chat_response(st.session_state.messages, context)
+            response = assistant_service.get_assistant_response(
+                st.session_state.messages, 
+                context
+            )
             st.markdown(response)
 
     st.session_state.messages.append({"role": "assistant", "content": response})

@@ -147,11 +147,4 @@ class DocumentService:
             
         except Exception as e:
             logger.error(f"Error searching documents: {str(e)}", exc_info=True)
-            return []
-
-    def get_chat_response(self, messages: List[Dict[str, str]], context: str) -> str:
-        """Get chat response from OpenAI."""
-        from src.assistant_service import AssistantService  # Import locale per evitare cicli
-        
-        assistant = AssistantService(self)  # Passiamo l'istanza di DocumentService
-        return assistant.get_assistant_response(messages, context) 
+            return [] 
