@@ -4,6 +4,7 @@ from src.assistant_service import AssistantService
 from config.agents import AGENTS_CONFIG
 import logging
 from pathlib import Path
+import time  # Aggiungi questo import se non c'è già
 
 # Setup logging
 logging.basicConfig(
@@ -44,6 +45,29 @@ st.set_page_config(
 with st.sidebar:
     st.title("🤖 Selezione Agente")
     
+    # Initialize session state variables if they don't exist
+    if 'refresh_state' not in st.session_state:
+        st.session_state.refresh_state = 'ready'
+    if 'show_toast' not in st.session_state:
+        st.session_state.show_toast = False
+    
+    # Show toast if needed
+    if st.session_state.show_toast:
+        st.toast("✅ Database ricaricato con successo!", icon="✅")
+        st.session_state.show_toast = False
+    
+    # Refresh button with status
+    if st.session_state.refresh_state == 'refreshing':
+        st.toast("🔄 Ricaricamento in corso...", icon="🔄")
+        st.session_state.refresh_state = 'ready'
+        st.session_state.show_toast = True
+        st.cache_resource.clear()
+        st.rerun()
+    
+    if st.button("🔄 Ricarica Documenti"):
+        st.session_state.refresh_state = 'refreshing'
+        st.rerun()
+    
     # Agent selection
     agent_options = {f"{config['icon']} {config['name']}": agent_id 
                     for agent_id, config in AGENTS_CONFIG.items()}
@@ -67,6 +91,10 @@ current_services = services[selected_agent_id]
 # Initialize session state for each agent
 if "agent_messages" not in st.session_state:
     st.session_state.agent_messages = {agent_id: [] for agent_id in AGENTS_CONFIG}
+
+# Set success state after initialization
+if st.session_state.get('refresh_state') == 'ready':
+    st.session_state.just_refreshed = True
 
 # Main chat interface
 st.title(f"{AGENTS_CONFIG[selected_agent_id]['icon']} {AGENTS_CONFIG[selected_agent_id]['name']}")
