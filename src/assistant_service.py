@@ -3,6 +3,7 @@ import json
 from typing import List, Dict, Any
 from openai import OpenAI
 import numpy as np
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,24 @@ class AssistantService:
                         "required": ["query"]
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_current_datetime",
+                    "description": "Get the current date and time in Italian format",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "format": {
+                                "type": "string",
+                                "description": "Format of the date/time. Default is 'DD-MM-YYYY HH:mm'",
+                                "enum": ["DD-MM-YYYY HH:mm", "DD-MM-YYYY", "HH:mm"],
+                                "default": "DD-MM-YYYY HH:mm"
+                            }
+                        }
+                    }
+                }
             }
         ]
 
@@ -54,6 +73,17 @@ class AssistantService:
             return [self._convert_to_json_serializable(i) for i in obj]
         return obj
 
+    def _get_current_datetime(self, format: str = "DD-MM-YYYY HH:mm") -> str:
+        """Get the current date and time in the specified format."""
+        now = datetime.now()
+        if format == "DD-MM-YYYY HH:mm":
+            return now.strftime("%d-%m-%Y %H:%M")
+        elif format == "DD-MM-YYYY":
+            return now.strftime("%d-%m-%Y")
+        elif format == "HH:mm":
+            return now.strftime("%H:%M")
+        return now.strftime("%d-%m-%Y %H:%M")
+
     def execute_function(self, name: str, args: Dict[str, Any]) -> Any:
         """Execute a function by name with given arguments."""
         logger.info(f"🔧 Function called: {name}")
@@ -65,9 +95,14 @@ class AssistantService:
                 args.get("num_results", 3)
             )
             logger.info(f"📊 Found {len(results)} results")
-            # Convertiamo i risultati in formato JSON-serializable
             json_safe_results = self._convert_to_json_serializable(results)
             return {"results": json_safe_results}
+            
+        elif name == "get_current_datetime":
+            format = args.get("format", "DD-MM-YYYY HH:mm")
+            current_time = self._get_current_datetime(format)
+            logger.info(f"⏰ Current time requested: {current_time}")
+            return {"datetime": current_time}
         
         else:
             logger.warning(f"❌ Unknown function: {name}")
