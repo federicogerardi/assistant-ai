@@ -9,3 +9,7 @@ data/*
 # Altri file di sistema
 .DS_Store
 *.pyc
+
+# Ma mantieni la cartella data stessa e il .gitkeep
+!data/
+!data/.gitkeep
